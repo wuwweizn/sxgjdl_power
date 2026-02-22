@@ -71,17 +71,7 @@ FIXED_SENSOR_DESCRIPTIONS: tuple[SxgjdlSensorEntityDescription, ...] = (
         native_unit_of_measurement=UNIT_YUAN,
         state_class=SensorStateClass.TOTAL_INCREASING, icon="mdi:cash-fast",
     ),
-    SxgjdlSensorEntityDescription(
-        key="month_usage", data_key="month_usage", name="本月用电量",
-        native_unit_of_measurement=UNIT_KWH,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING, icon="mdi:calendar-month",
-    ),
-    SxgjdlSensorEntityDescription(
-        key="month_amt", data_key="month_amt", name="本月已结电费",
-        native_unit_of_measurement=UNIT_YUAN,
-        state_class=SensorStateClass.TOTAL_INCREASING, icon="mdi:receipt",
-    ),
+
     SxgjdlSensorEntityDescription(
         key="month_esti_usage", data_key="month_esti_usage", name="本月预估用电量",
         native_unit_of_measurement=UNIT_KWH,
@@ -368,14 +358,14 @@ class SxgjdlYearlySummarySensor(CoordinatorEntity[SxgjdlDataCoordinator], Sensor
 # ------------------------------------------------------------------ #
 def _device_info(coordinator: SxgjdlDataCoordinator, cons_no: str) -> DeviceInfo:
     data = coordinator.data or {}
-    cons_name = data.get("cons_name", cons_no)
+    cons_name = data.get("cons_name", "")
     elec_addr = data.get("elec_addr", "")
     return DeviceInfo(
         identifiers={(DOMAIN, cons_no)},
-        name=f"山西地电 - {cons_name}",
+        name=f"山西地电_{cons_no}",  # 设备名用户号，简洁明了
         manufacturer="山西省地方电力（集团）有限公司",
-        model=f"户号: {cons_no}",
-        sw_version="1.0.0",
+        model=cons_name or f"户号{cons_no}",  # 用户名放在 model
+        sw_version="1.0.4",
         configuration_url="http://ddwxyw.sxgjdl.com",
         suggested_area=elec_addr or "电力",
     )
