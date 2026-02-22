@@ -1,8 +1,8 @@
 # 山西地电用电查询
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-[![GitHub Release](https://img.shields.io/github/release/liyong763435720/sxgjdl_power.svg)](https://github.com/liyong763435720/sxgjdl_power/releases)
-[![License](https://img.shields.io/github/license/liyong763435720/sxgjdl_power.svg)](LICENSE)
+[![GitHub Release](https://img.shields.io/github/release/wuwweizn/sxgjdl_power.svg)](https://github.com/wuwweizn/sxgjdl_power/releases)
+[![License](https://img.shields.io/github/license/wuwweizn/sxgjdl_power.svg)](LICENSE)
 
 在 Home Assistant 中查询**山西省地方电力（集团）有限公司**的用电数据，支持余额、用电量、电费账单等 15 个传感器，可接入 HA 能源面板。
 
@@ -32,14 +32,14 @@
 ### 方法一：通过 HACS 安装（推荐）
 
 1. 在 HACS 中点击右上角菜单 → **自定义仓库**
-2. 输入仓库地址：`https://github.com/liyong763435720/sxgjdl_power`
+2. 输入仓库地址：`https://github.com/wuwweizn/sxgjdl_power`
 3. 类别选择：**集成（Integration）**
 4. 点击添加，然后在 HACS 集成列表中找到 **山西地电用电查询** 并安装
 5. 重启 Home Assistant
 
 ### 方法二：手动安装
 
-1. 下载最新 [Release](https://github.com/liyong763435720/sxgjdl_power/releases) 中的 zip 文件
+1. 下载最新 [Release](https://github.com/wuwweizn/sxgjdl_power/releases) 中的 zip 文件
 2. 将 `custom_components/sxgjdl_power` 目录复制到你的 HA 配置目录下的 `custom_components/`
 3. 重启 Home Assistant
 
