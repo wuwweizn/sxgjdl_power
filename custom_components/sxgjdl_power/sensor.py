@@ -224,8 +224,8 @@ class SxgjdlMonthlyUsageSensor(CoordinatorEntity[SxgjdlDataCoordinator], SensorE
         self._year = year
         self._month = month
         self._data_key = f"monthly_usage_{month:02d}"
-        self._attr_unique_id = f"{cons_no}_monthly_usage_{year}_{month:02d}"
-        self._attr_name = f"{year}年{MONTH_NAMES[month]}用电量"
+        self._attr_unique_id = f"{cons_no}_monthly_usage_{month:02d}"
+        self._attr_name = f"{MONTH_NAMES[month]}用电量"
         self._attr_native_unit_of_measurement = UNIT_KWH
 
     @property
@@ -272,8 +272,8 @@ class SxgjdlMonthlyAmtSensor(CoordinatorEntity[SxgjdlDataCoordinator], SensorEnt
         self._year = year
         self._month = month
         self._data_key = f"monthly_amt_{month:02d}"
-        self._attr_unique_id = f"{cons_no}_monthly_amt_{year}_{month:02d}"
-        self._attr_name = f"{year}年{MONTH_NAMES[month]}电费"
+        self._attr_unique_id = f"{cons_no}_monthly_amt_{month:02d}"
+        self._attr_name = f"{MONTH_NAMES[month]}电费"
         self._attr_native_unit_of_measurement = UNIT_YUAN
 
     @property
@@ -362,10 +362,10 @@ def _device_info(coordinator: SxgjdlDataCoordinator, cons_no: str) -> DeviceInfo
     elec_addr = data.get("elec_addr", "")
     return DeviceInfo(
         identifiers={(DOMAIN, cons_no)},
-        name=f"山西地电_{cons_no}",  # 设备名用户号，简洁明了
+        name=f"SXGJ Power {cons_no}",  # 纯英文避免拼音实体ID
         manufacturer="山西省地方电力（集团）有限公司",
-        model=cons_name or f"户号{cons_no}",  # 用户名放在 model
-        sw_version="1.0.4",
+        model=cons_name or f"户号{cons_no}",
+        sw_version="1.0.5",
         configuration_url="http://ddwxyw.sxgjdl.com",
         suggested_area=elec_addr or "电力",
     )
