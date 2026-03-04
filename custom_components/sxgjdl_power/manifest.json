@@ -1,12 +1,12 @@
 {
   "domain": "sxgjdl_power",
   "name": "山西地电用电查询",
-  "documentation": "https://github.com/liyong763435720/sxgjdl_power",
-  "issue_tracker": "https://github.com/liyong763435720/sxgjdl_power/issues",
+  "documentation": "https://github.com/wuwweizn/sxgjdl_power",
+  "issue_tracker": "https://github.com/wuwweizn/sxgjdl_power/issues",
   "dependencies": [],
-  "codeowners": ["@liyong763435720"],
+  "codeowners": ["@wuwweizn"],
   "requirements": [],
-  "version": "1.0.8",
+  "version": "2.0.9",
   "iot_class": "cloud_polling",
   "config_flow": true
 }
