@@ -135,9 +135,27 @@ class SxgjdlDataCoordinator(DataUpdateCoordinator):
                     # key 保持 today_* 不变（避免破坏兼容性），但传感器名称改为"昨日"
                     result["today_usage"] = active.get("dayEstiPq") or 0
                     result["today_amt"] = float(active.get("dayEstiAmt") or 0)
-                    result["month_esti_usage"] = active.get("estiPq") or 0
-                    result["month_esti_amt"] = float(active.get("estiAmt") or 0)
                     result["last_mr_date"] = active.get("lastMrDate", "")
+                    
+                    # 本月预估 = 只累加当月的 dayEstiPq（过滤掉跨月数据）
+                    month_total_usage = 0
+                    month_total_amt = 0.0
+                    for day_entry in daily_list:
+                        ymd = day_entry.get("ymd", "")
+                        # 只累加当前月的数据（ymd 前6位匹配 current_month）
+                        if ymd and len(ymd) >= 6 and ymd[:6] == current_month:
+                            day_pq = day_entry.get("dayEstiPq")
+                            day_amt = day_entry.get("dayEstiAmt")
+                            if day_pq is not None and day_pq > 0:
+                                month_total_usage += day_pq
+                            if day_amt is not None and day_amt != "":
+                                try:
+                                    month_total_amt += float(day_amt)
+                                except (ValueError, TypeError):
+                                    pass
+                    
+                    result["month_esti_usage"] = month_total_usage
+                    result["month_esti_amt"] = month_total_amt
                 any_success = True
         except SxgjdlApiError as err:
             _LOGGER.warning("获取月度每日用电失败: %s", err)
