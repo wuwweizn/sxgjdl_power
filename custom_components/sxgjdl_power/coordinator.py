@@ -149,9 +149,7 @@ class SxgjdlDataCoordinator(DataUpdateCoordinator):
                 if active:
                     # key 保持 today_* 不变（避免破坏兼容性），但传感器名称改为"昨日"
                     result["today_usage"] = active.get("dayEstiPq") or 0
-                    # dayEstiAmt 是本月累计预估电费，直接赋给 month_esti_amt
-                    # today_amt（昨日电费）在步骤5拿到 unit_price 后用 用电量×电价 计算
-                    result["month_esti_amt"] = float(active.get("dayEstiAmt") or 0)
+                    # today_amt / month_esti_amt 均无法直接获取，在步骤5拿到 unit_price 后用乘法计算
                     result["last_mr_date"] = active.get("lastMrDate", "")
 
                 # 本月预估用电量 = 累加当月每日 dayEstiPq（独立于 active，过滤跨月数据）
@@ -199,14 +197,17 @@ class SxgjdlDataCoordinator(DataUpdateCoordinator):
         except SxgjdlApiError as err:
             _LOGGER.warning("获取账单明细失败: %s", err)
 
-        # 昨日电费 = 昨日用电量 × 当前电价（dayEstiAmt 是月累计值，不是昨日电费）
+        # 昨日电费 & 本月预估电费 均无法直接获取，用 用电量 × 当前电价 计算
         unit_price = result.get("unit_price") or self._last_valid_data.get("unit_price", 0)
-        if unit_price and result.get("today_usage", 0) > 0:
-            result["today_amt"] = round(result["today_usage"] * unit_price, 4)
-            _LOGGER.debug(
-                "昨日电费: %.4f kWh × %.4f 元/kWh = %.4f 元",
-                result["today_usage"], unit_price, result["today_amt"],
-            )
+        if unit_price:
+            if result.get("today_usage", 0) > 0:
+                result["today_amt"] = round(result["today_usage"] * unit_price, 4)
+                _LOGGER.debug(
+                    "昨日电费: %.4f kWh × %.4f 元/kWh = %.4f 元",
+                    result["today_usage"], unit_price, result["today_amt"],
+                )
+            if result.get("month_esti_usage", 0) > 0:
+                result["month_esti_amt"] = round(result["month_esti_usage"] * unit_price, 4)
         # 无数据时兜底为 0，避免传感器显示"未知"
         result.setdefault("today_amt", 0)
         result.setdefault("month_esti_amt", 0)
