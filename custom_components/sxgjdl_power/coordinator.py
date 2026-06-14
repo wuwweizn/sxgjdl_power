@@ -192,6 +192,16 @@ class SxgjdlDataCoordinator(DataUpdateCoordinator):
         except SxgjdlApiError as err:
             _LOGGER.warning("获取账单明细失败: %s", err)
 
+        # 昨日电费兜底：dayEstiAmt 为空时用 昨日用电量 × 当前电价 估算
+        if result.get("today_amt", 0) == 0 and result.get("today_usage", 0) > 0:
+            unit_price = result.get("unit_price") or self._last_valid_data.get("unit_price", 0)
+            if unit_price:
+                result["today_amt"] = round(result["today_usage"] * unit_price, 4)
+                _LOGGER.debug(
+                    "dayEstiAmt 缺失，使用估算昨日电费: %.4f kWh × %.4f 元/kWh = %.4f 元",
+                    result["today_usage"], unit_price, result["today_amt"],
+                )
+
         # ------------------------------------------------------------------ #
         # 缓存逻辑：有新数据则更新缓存；全部失败则用缓存，避免传感器变"未知"  #
         # ------------------------------------------------------------------ #
