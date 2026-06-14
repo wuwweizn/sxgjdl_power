@@ -149,26 +149,20 @@ class SxgjdlDataCoordinator(DataUpdateCoordinator):
                 if active:
                     # key 保持 today_* 不变（避免破坏兼容性），但传感器名称改为"昨日"
                     result["today_usage"] = active.get("dayEstiPq") or 0
-                    result["today_amt"] = float(active.get("dayEstiAmt") or 0)
+                    # dayEstiAmt 是本月累计预估电费，不是昨日电费，不能直接使用
+                    # today_amt 在步骤5拿到 unit_price 后统一计算
                     result["last_mr_date"] = active.get("lastMrDate", "")
 
-                # 本月预估 = 只累加当月的 dayEstiPq（独立于 active，过滤掉跨月数据）
+                # 本月预估用电量 = 累加当月每日 dayEstiPq（独立于 active，过滤跨月数据）
+                # 本月预估电费在步骤5拿到 unit_price 后统一计算
                 month_total_usage = 0
-                month_total_amt = 0.0
                 for day_entry in daily_list:
                     ymd = day_entry.get("ymd", "")
                     if ymd and len(ymd) >= 6 and ymd[:6] == current_month:
                         day_pq = day_entry.get("dayEstiPq")
-                        day_amt = day_entry.get("dayEstiAmt")
                         if day_pq is not None and day_pq > 0:
                             month_total_usage += day_pq
-                        if day_amt is not None and day_amt != "":
-                            try:
-                                month_total_amt += float(day_amt)
-                            except (ValueError, TypeError):
-                                pass
                 result["month_esti_usage"] = month_total_usage
-                result["month_esti_amt"] = month_total_amt
                 any_success = True
         except SxgjdlApiError as err:
             _LOGGER.warning("获取月度每日用电失败: %s", err)
@@ -205,15 +199,17 @@ class SxgjdlDataCoordinator(DataUpdateCoordinator):
         except SxgjdlApiError as err:
             _LOGGER.warning("获取账单明细失败: %s", err)
 
-        # 昨日电费兜底：dayEstiAmt 为空时用 昨日用电量 × 当前电价 估算
-        if result.get("today_amt", 0) == 0 and result.get("today_usage", 0) > 0:
-            unit_price = result.get("unit_price") or self._last_valid_data.get("unit_price", 0)
-            if unit_price:
+        # 昨日电费 & 本月预估电费 = 用电量 × 当前电价（dayEstiAmt 为月累计值，不可用）
+        unit_price = result.get("unit_price") or self._last_valid_data.get("unit_price", 0)
+        if unit_price:
+            if result.get("today_usage", 0) > 0:
                 result["today_amt"] = round(result["today_usage"] * unit_price, 4)
                 _LOGGER.debug(
-                    "dayEstiAmt 缺失，使用估算昨日电费: %.4f kWh × %.4f 元/kWh = %.4f 元",
+                    "昨日电费: %.4f kWh × %.4f 元/kWh = %.4f 元",
                     result["today_usage"], unit_price, result["today_amt"],
                 )
+            if result.get("month_esti_usage", 0) > 0:
+                result["month_esti_amt"] = round(result["month_esti_usage"] * unit_price, 4)
 
         # ------------------------------------------------------------------ #
         # 缓存逻辑：有新数据则更新缓存；全部失败则用缓存，避免传感器变"未知"  #
