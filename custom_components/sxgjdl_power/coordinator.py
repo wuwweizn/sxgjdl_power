@@ -89,6 +89,19 @@ class SxgjdlDataCoordinator(DataUpdateCoordinator):
                         result["last_month_usage"] = rec.get("thisPq", 0)
                         result["last_month_amt"] = rec.get("prices", 0.0)
 
+                # 1月份时上月是去年12月，需要额外查上一年数据
+                if cur_month_num == 1 and "last_month_usage" not in result:
+                    try:
+                        last_year_rec = await self.client.get_record_list(current_year - 1)
+                        if last_year_rec.get("flag"):
+                            for rec in last_year_rec.get("data", {}).get("recordList", []):
+                                if rec.get("month") == 12:
+                                    result["last_month_usage"] = rec.get("thisPq", 0)
+                                    result["last_month_amt"] = rec.get("prices", 0.0)
+                                    break
+                    except SxgjdlApiError as err:
+                        _LOGGER.warning("获取上年12月数据失败: %s", err)
+
                 for rec in record_list:
                     m = rec.get("month", 0)
                     if 1 <= m <= 12:
@@ -127,8 +140,10 @@ class SxgjdlDataCoordinator(DataUpdateCoordinator):
                 for entry in daily_list:
                     if entry.get("ymd") == today:
                         today_entry = entry
+                    # 取 ymd 最大的有效条目，不依赖列表顺序
                     if entry.get("dayEstiPq") is not None:
-                        latest_entry = entry
+                        if latest_entry is None or entry.get("ymd", "") > latest_entry.get("ymd", ""):
+                            latest_entry = entry
 
                 active = today_entry or latest_entry
                 if active:
@@ -136,26 +151,24 @@ class SxgjdlDataCoordinator(DataUpdateCoordinator):
                     result["today_usage"] = active.get("dayEstiPq") or 0
                     result["today_amt"] = float(active.get("dayEstiAmt") or 0)
                     result["last_mr_date"] = active.get("lastMrDate", "")
-                    
-                    # 本月预估 = 只累加当月的 dayEstiPq（过滤掉跨月数据）
-                    month_total_usage = 0
-                    month_total_amt = 0.0
-                    for day_entry in daily_list:
-                        ymd = day_entry.get("ymd", "")
-                        # 只累加当前月的数据（ymd 前6位匹配 current_month）
-                        if ymd and len(ymd) >= 6 and ymd[:6] == current_month:
-                            day_pq = day_entry.get("dayEstiPq")
-                            day_amt = day_entry.get("dayEstiAmt")
-                            if day_pq is not None and day_pq > 0:
-                                month_total_usage += day_pq
-                            if day_amt is not None and day_amt != "":
-                                try:
-                                    month_total_amt += float(day_amt)
-                                except (ValueError, TypeError):
-                                    pass
-                    
-                    result["month_esti_usage"] = month_total_usage
-                    result["month_esti_amt"] = month_total_amt
+
+                # 本月预估 = 只累加当月的 dayEstiPq（独立于 active，过滤掉跨月数据）
+                month_total_usage = 0
+                month_total_amt = 0.0
+                for day_entry in daily_list:
+                    ymd = day_entry.get("ymd", "")
+                    if ymd and len(ymd) >= 6 and ymd[:6] == current_month:
+                        day_pq = day_entry.get("dayEstiPq")
+                        day_amt = day_entry.get("dayEstiAmt")
+                        if day_pq is not None and day_pq > 0:
+                            month_total_usage += day_pq
+                        if day_amt is not None and day_amt != "":
+                            try:
+                                month_total_amt += float(day_amt)
+                            except (ValueError, TypeError):
+                                pass
+                result["month_esti_usage"] = month_total_usage
+                result["month_esti_amt"] = month_total_amt
                 any_success = True
         except SxgjdlApiError as err:
             _LOGGER.warning("获取月度每日用电失败: %s", err)
