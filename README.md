@@ -62,7 +62,7 @@
    关注微信公众号 **山西地电** → 点击「用电查询」 → 进入用电详情页，复制页面链接（URL）：
 
    ```text
-   http://ddwxyw.sxgjdl.com/.../dlcx-detail.html?...&consNo=0209605903&orgNo=144160206
+   http://ddwxyw.sxgjdl.com/.../dlcx-detail.html?...&consNo=0123456789&orgNo=144160206
    ```
 
    - `consNo` 的值 = 户号
