@@ -12,12 +12,11 @@ https://github.com/home-assistant/brands
 ```
 custom_integrations/sxgjdl_power/
 ├── icon.png        (256x256)
-├── icon@2x.png     (512x512)
-└── manifest.json
+└── icon@2x.png     (512x512)
 ```
 
 ### 3. 复制文件
-将本仓库 `.github/brands/sxgjdl_power/` 下的三个文件复制到上述目录。
+将本仓库 `custom_components/sxgjdl_power/brand/` 下的两个图标文件（`icon.png` 和 `icon@2x.png`）复制到上述目录。
 
 ### 4. 提交 Pull Request
 - 标题：`Add sxgjdl_power integration icon`
