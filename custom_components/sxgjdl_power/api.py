@@ -39,6 +39,16 @@ class SxgjdlApiError(Exception):
     """API 调用异常"""
 
 
+def _normalize_wx_session(value: str) -> str:
+    """兼容直接填值或粘贴 'WXSESSION=xxx' 的格式"""
+    v = (value or "").strip()
+    if v.upper().startswith("WXSESSION="):
+        v = v.split("=", 1)[1].strip()
+    if ";" in v:
+        v = v.split(";", 1)[0].strip()
+    return v
+
+
 class SxgjdlApiClient:
     """山西地电 API 客户端"""
 
@@ -47,11 +57,13 @@ class SxgjdlApiClient:
         cons_no: str,
         org_no: str,
         open_id: str = "",
+        wx_session: str = "",
         session: aiohttp.ClientSession | None = None,
     ) -> None:
         self.cons_no = cons_no
         self.org_no = org_no
         self.open_id = open_id
+        self.wx_session = _normalize_wx_session(wx_session)
         self._session = session
         self._own_session = session is None
 
@@ -70,9 +82,15 @@ class SxgjdlApiClient:
         req_params = dict(params)
         if self.open_id and "openId" not in req_params:
             req_params["openId"] = self.open_id
+        req_headers = {"Cookie": f"WXSESSION={self.wx_session}"} if self.wx_session else None
         session = await self._get_session()
         try:
-            async with session.get(url, params=req_params, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+            async with session.get(
+                url,
+                params=req_params,
+                headers=req_headers,
+                timeout=aiohttp.ClientTimeout(total=15),
+            ) as resp:
                 resp.raise_for_status()
                 data = await resp.json(content_type=None)
                 _LOGGER.debug("GET %s params=%s -> %s", path, req_params, data)

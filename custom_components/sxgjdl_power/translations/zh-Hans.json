@@ -8,6 +8,7 @@
           "cons_no": "户号 (consNo)",
           "org_no": "供电所编号 (orgNo)",
           "open_id": "微信 openId",
+          "wx_session": "WXSESSION（可选，用于查询余额和应收电费）",
           "scan_interval": "刷新间隔（分钟）"
         }
       }
@@ -27,6 +28,7 @@
         "title": "山西地电 - 选项",
         "data": {
           "open_id": "微信 openId",
+          "wx_session": "WXSESSION（可选，用于查询余额和应收电费）",
           "scan_interval": "刷新间隔（分钟）"
         }
       }

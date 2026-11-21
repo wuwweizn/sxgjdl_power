@@ -17,6 +17,7 @@ from .const import (
     CONF_CONS_NO,
     CONF_ORG_NO,
     CONF_OPEN_ID,
+    CONF_WX_SESSION,
     CONF_SCAN_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
 )
@@ -28,6 +29,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_CONS_NO): cv.string,
         vol.Required(CONF_ORG_NO): cv.string,
         vol.Required(CONF_OPEN_ID): cv.string,
+        vol.Optional(CONF_WX_SESSION, default=""): cv.string,
         vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): vol.All(
             vol.Coerce(int), vol.Range(min=10, max=1440)
         ),
@@ -57,13 +59,19 @@ class SxgjdlConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             cons_no = user_input[CONF_CONS_NO].strip()
             org_no = user_input[CONF_ORG_NO].strip()
             open_id = user_input.get(CONF_OPEN_ID, "").strip()
+            wx_session = user_input.get(CONF_WX_SESSION, "").strip()
 
             # 检查是否已添加相同户号
             await self.async_set_unique_id(cons_no)
             self._abort_if_unique_id_configured()
 
             # 验证户号和 openId 是否有效
-            client = SxgjdlApiClient(cons_no=cons_no, org_no=org_no, open_id=open_id)
+            client = SxgjdlApiClient(
+                cons_no=cons_no,
+                org_no=org_no,
+                open_id=open_id,
+                wx_session=wx_session,
+            )
             try:
                 cons_info = await client.get_cons_info()
                 if cons_info.get("flag") is not True:
@@ -83,6 +91,7 @@ class SxgjdlConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             CONF_CONS_NO: cons_no,
                             CONF_ORG_NO: org_no,
                             CONF_OPEN_ID: open_id,
+                            CONF_WX_SESSION: wx_session,
                             CONF_SCAN_INTERVAL: user_input.get(
                                 CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
                             ),
@@ -107,7 +116,7 @@ class SxgjdlConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class SxgjdlOptionsFlow(config_entries.OptionsFlow):
-    """选项流程：允许修改 openId 和刷新间隔"""
+    """选项流程：允许修改 openId、WXSESSION 和刷新间隔"""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -116,11 +125,17 @@ class SxgjdlOptionsFlow(config_entries.OptionsFlow):
             data = dict(user_input)
             if CONF_OPEN_ID in data:
                 data[CONF_OPEN_ID] = data[CONF_OPEN_ID].strip()
+            if CONF_WX_SESSION in data:
+                data[CONF_WX_SESSION] = data[CONF_WX_SESSION].strip()
             return self.async_create_entry(title="", data=data)
 
         current_open_id = self.config_entry.options.get(
             CONF_OPEN_ID,
             self.config_entry.data.get(CONF_OPEN_ID, ""),
+        )
+        current_wx_session = self.config_entry.options.get(
+            CONF_WX_SESSION,
+            self.config_entry.data.get(CONF_WX_SESSION, ""),
         )
         current_interval = self.config_entry.options.get(
             CONF_SCAN_INTERVAL,
@@ -132,6 +147,7 @@ class SxgjdlOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_OPEN_ID, default=current_open_id): cv.string,
+                    vol.Optional(CONF_WX_SESSION, default=current_wx_session): cv.string,
                     vol.Optional(
                         CONF_SCAN_INTERVAL, default=current_interval
                     ): vol.All(vol.Coerce(int), vol.Range(min=10, max=1440)),

@@ -13,6 +13,7 @@ from .const import (
     CONF_CONS_NO,
     CONF_ORG_NO,
     CONF_OPEN_ID,
+    CONF_WX_SESSION,
     CONF_SCAN_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
 )
@@ -31,12 +32,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         CONF_OPEN_ID,
         entry.data.get(CONF_OPEN_ID, ""),
     )
+    wx_session = entry.options.get(
+        CONF_WX_SESSION,
+        entry.data.get(CONF_WX_SESSION, ""),
+    )
     scan_interval = entry.options.get(
         CONF_SCAN_INTERVAL,
         entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
     )
 
-    client = SxgjdlApiClient(cons_no=cons_no, org_no=org_no, open_id=open_id)
+    client = SxgjdlApiClient(
+        cons_no=cons_no,
+        org_no=org_no,
+        open_id=open_id,
+        wx_session=wx_session,
+    )
 
     # 验证连接
     try:

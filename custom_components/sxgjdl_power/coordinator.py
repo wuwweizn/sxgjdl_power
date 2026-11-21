@@ -61,8 +61,20 @@ class SxgjdlDataCoordinator(DataUpdateCoordinator):
                 result["cons_name"] = fee_data.get("consName", "")
                 result["elec_addr"] = fee_data.get("elecAddr", "")
                 any_success = True
+            else:
+                _LOGGER.warning(
+                    "获取电费信息返回失败: code=%s, msg=%s",
+                    fees.get("code"),
+                    fees.get("msg"),
+                )
         except SxgjdlApiError as err:
-            _LOGGER.warning("获取电费信息失败: %s", err)
+            if "401" in str(err):
+                if self.client.wx_session:
+                    _LOGGER.warning("获取电费信息失败（HTTP 401）：WXSESSION 已失效，请在集成配置中更新")
+                else:
+                    _LOGGER.info("获取电费信息需要配置 WXSESSION（HTTP 401），已跳过余额与应收电费更新")
+            else:
+                _LOGGER.warning("获取电费信息失败: %s", err)
 
         # 2. 年度月度汇总（本年）
         try:

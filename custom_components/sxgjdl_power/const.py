@@ -7,6 +7,7 @@ DEFAULT_NAME = "山西地电"
 CONF_CONS_NO = "cons_no"
 CONF_ORG_NO = "org_no"
 CONF_OPEN_ID = "open_id"
+CONF_WX_SESSION = "wx_session"
 CONF_SCAN_INTERVAL = "scan_interval"
 
 # 默认刷新间隔（分钟）

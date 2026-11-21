@@ -64,7 +64,7 @@ FIXED_SENSOR_DESCRIPTIONS: tuple[SxgjdlSensorEntityDescription, ...] = (
         key="today_usage", data_key="today_usage", name="昨日用电量",
         native_unit_of_measurement=UNIT_KWH,
         device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.MEASUREMENT, icon="mdi:lightning-bolt",
+        state_class=SensorStateClass.TOTAL, icon="mdi:lightning-bolt",
     ),
     SxgjdlSensorEntityDescription(
         key="today_amt", data_key="today_amt", name="昨日电费",
