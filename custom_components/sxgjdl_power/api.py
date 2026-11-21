@@ -23,7 +23,10 @@ HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/132.0.0.0 Safari/537.36"
+        "Chrome/144.0.0.0 Safari/537.36 NetType/WIFI "
+        "MicroMessenger/7.0.20.1781(0x6700143B) "
+        "WindowsWechat(0x63090a13) UnifiedPCWindowsWechat(0xf254200d) "
+        "XWEB/26073 Flue"
     ),
     "Accept": "*/*",
     "X-Requested-With": "XMLHttpRequest",
@@ -64,12 +67,15 @@ class SxgjdlApiClient:
     async def _get(self, path: str, params: dict) -> dict:
         """发起 GET 请求并返回解析后的 JSON"""
         url = BASE_URL + path
+        req_params = dict(params)
+        if self.open_id and "openId" not in req_params:
+            req_params["openId"] = self.open_id
         session = await self._get_session()
         try:
-            async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+            async with session.get(url, params=req_params, timeout=aiohttp.ClientTimeout(total=15)) as resp:
                 resp.raise_for_status()
                 data = await resp.json(content_type=None)
-                _LOGGER.debug("GET %s params=%s -> %s", path, params, data)
+                _LOGGER.debug("GET %s params=%s -> %s", path, req_params, data)
                 return data
         except aiohttp.ClientConnectorError as err:
             raise SxgjdlApiError(f"无法连接到服务器: {err}") from err
@@ -140,9 +146,13 @@ class SxgjdlApiClient:
         return await self._get(API_DAYS_ONLY, params)
 
     async def validate_connection(self) -> bool:
-        """验证户号是否有效（用于 config flow）"""
-        try:
-            data = await self.get_cons_info()
-            return data.get("flag") is True
-        except SxgjdlApiError:
-            return False
+        """验证户号和 openId 是否有效（网络/解析异常向上抛出）"""
+        data = await self.get_cons_info()
+        if data.get("flag") is True:
+            return True
+        _LOGGER.warning(
+            "户号或 openId 校验失败: consNo=%s, msg=%s",
+            self.cons_no,
+            data.get("msg"),
+        )
+        return False

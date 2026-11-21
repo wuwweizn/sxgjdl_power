@@ -27,7 +27,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_CONS_NO): cv.string,
         vol.Required(CONF_ORG_NO): cv.string,
-        vol.Optional(CONF_OPEN_ID, default=""): cv.string,
+        vol.Required(CONF_OPEN_ID): cv.string,
         vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): vol.All(
             vol.Coerce(int), vol.Range(min=10, max=1440)
         ),
@@ -62,19 +62,20 @@ class SxgjdlConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(cons_no)
             self._abort_if_unique_id_configured()
 
-            # 验证户号是否有效
+            # 验证户号和 openId 是否有效
             client = SxgjdlApiClient(cons_no=cons_no, org_no=org_no, open_id=open_id)
             try:
-                valid = await client.validate_connection()
-                if not valid:
+                cons_info = await client.get_cons_info()
+                if cons_info.get("flag") is not True:
+                    _LOGGER.warning(
+                        "户号或 openId 校验失败: consNo=%s, msg=%s",
+                        cons_no,
+                        cons_info.get("msg"),
+                    )
                     errors["base"] = "invalid_cons_no"
                 else:
                     # 获取户名作为条目标题
-                    cons_info = await client.get_cons_info()
-                    cons_name = ""
-                    if cons_info.get("flag"):
-                        cons_name = (cons_info.get("data") or {}).get("consName", "")
-
+                    cons_name = (cons_info.get("data") or {}).get("consName", "")
                     title = f"山西地电 - {cons_name or cons_no}"
                     return self.async_create_entry(
                         title=title,
@@ -87,7 +88,8 @@ class SxgjdlConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             ),
                         },
                     )
-            except SxgjdlApiError:
+            except SxgjdlApiError as err:
+                _LOGGER.warning("连接山西地电服务器失败: %s", err)
                 errors["base"] = "cannot_connect"
             finally:
                 await client.close()
@@ -101,21 +103,25 @@ class SxgjdlConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: config_entries.ConfigEntry):
-        return SxgjdlOptionsFlow(config_entry)
+        return SxgjdlOptionsFlow()
 
 
 class SxgjdlOptionsFlow(config_entries.OptionsFlow):
-    """选项流程：允许修改刷新间隔"""
-
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        self.config_entry = config_entry
+    """选项流程：允许修改 openId 和刷新间隔"""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            data = dict(user_input)
+            if CONF_OPEN_ID in data:
+                data[CONF_OPEN_ID] = data[CONF_OPEN_ID].strip()
+            return self.async_create_entry(title="", data=data)
 
+        current_open_id = self.config_entry.options.get(
+            CONF_OPEN_ID,
+            self.config_entry.data.get(CONF_OPEN_ID, ""),
+        )
         current_interval = self.config_entry.options.get(
             CONF_SCAN_INTERVAL,
             self.config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
@@ -125,6 +131,7 @@ class SxgjdlOptionsFlow(config_entries.OptionsFlow):
             step_id="init",
             data_schema=vol.Schema(
                 {
+                    vol.Required(CONF_OPEN_ID, default=current_open_id): cv.string,
                     vol.Optional(
                         CONF_SCAN_INTERVAL, default=current_interval
                     ): vol.All(vol.Coerce(int), vol.Range(min=10, max=1440)),

@@ -27,7 +27,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """初始化集成"""
     cons_no = entry.data[CONF_CONS_NO]
     org_no = entry.data[CONF_ORG_NO]
-    open_id = entry.data.get(CONF_OPEN_ID, "")
+    open_id = entry.options.get(
+        CONF_OPEN_ID,
+        entry.data.get(CONF_OPEN_ID, ""),
+    )
     scan_interval = entry.options.get(
         CONF_SCAN_INTERVAL,
         entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
